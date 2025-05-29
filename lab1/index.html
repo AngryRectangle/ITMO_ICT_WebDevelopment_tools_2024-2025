@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Lab1 - My Docs</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">My Docs</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Welcome to Мои лабораторные работы</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">Lab1</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href=".." class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" class="nav-link disabled">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            
+            
+            
+            
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h3 id="_1">Цели</h3>
+<p>Научится реализовывать полноценное серверное приложение с помощью фреймворка FastAPI с применением дополнительных
+средств и библиотек.</p>
+<h3 id="_2">Тема</h3>
+<p>Необходиом создать простой сервис для управления личными финансами. Сервис должен позволять пользователям вводить доходы
+и расходы, устанавливать бюджеты на различные категории, а также просматривать отчеты о своих финансах. Дополнительные
+функции могут включать в себя возможность получения уведомлений о превышении бюджета, анализа трат и установки целей на
+будущее.</p>
+<h3 id="_3">Модель данных</h3>
+<p><img alt="img_2.png" src="../img_2.png" />
+Для ведения учёта расходов и доходов используется транзакционная система с записью промежуточного итогу в баланс счёта.
+У каждой транзакции есть своя категория. Приход или расход определяется по тому + или - знак в поле amount.
+Чтобы ставить цели пользователь может завести отдельный счёт для накоплений. На этот счёт можно поставить цель и дедлайн.
+Для бюджетирования есть функционал создания бюджета на категории и счёт, для которого он будет применяться.
+У бюджета есть начальный и конечный срок.</p>
+<h3 id="api">API</h3>
+<p><img alt="img_1.png" src="../img_1.png" /></p>
+<h3 id="15">Задание на 15 баллов</h3>
+<p>Эндпоинты авторизации и регистрации:
+- /token - POST - получение токена доступа
+- /users/me - GET - получение информации о текущем пользователе по токену и проверка его валидности
+- /users - GET - получение списка всех пользователей
+- /users - POST - регистрация</p>
+<p><img alt="img.png" src="../img.png" />
+Пароль хранится в базе данных в виде хеша argon2. Генерируется через passlib.
+Используется так же перец, который хранится в env файле. Соль хранится внутри строки получаемой из passlib в базе данных.</p>
+<pre><code class="language-python">pepper = os.getenv('PEPPER')
+
+pwd_context = CryptContext(schemes=[&quot;argon2&quot;])
+
+def hash_password(plain_password: str) -&gt; str:
+    pwd_with_pepper = plain_password + pepper
+    return pwd_context.hash(pwd_with_pepper)
+
+def verify_password(plain_password: str, hashed: str) -&gt; bool:
+    pwd_with_pepper = plain_password + pepper
+    return pwd_context.verify(pwd_with_pepper, hashed)
+</code></pre>
+<p>Генерирую JWT через jose и отдаю его в token эндпоинте</p>
+<pre><code class="language-python">def create_access_token(
+    data: dict,
+    expires_delta: Optional[timedelta] = None
+) -&gt; str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=LIFETIME_IN_MINUTES))
+    to_encode.update({&quot;exp&quot;: expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+</code></pre>
+<p>Ручная валидация и парснг JWT. Разбиваю на куски, проверяю подпись, декодирую тело и возвращаю пользователя из бд:</p>
+<pre><code class="language-python">def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_session),
+) -&gt; User:
+    header_b64, payload_b64, sig_b64 = token.split(&quot;.&quot;)
+    payload_json = _b64url_decode(payload_b64).decode(&quot;utf-8&quot;)
+    signing_input = f&quot;{header_b64}.{payload_b64}&quot;.encode(&quot;ascii&quot;)
+    expected_sig = hmac.new(
+        key=SECRET_KEY.encode(&quot;utf-8&quot;),
+        msg=signing_input,
+        digestmod=hashlib.sha256
+    ).digest()
+
+    actual_sig = _b64url_decode(sig_b64)
+    print(expected_sig)
+    print(actual_sig)
+    if not hmac.compare_digest(expected_sig, actual_sig):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=&quot;Invalid token signature&quot;,
+            headers={&quot;WWW-Authenticate&quot;: &quot;Bearer&quot;},
+        )
+
+    payload = json.loads(payload_json)
+    user_id =  payload.get(&quot;sub&quot;)
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=&quot;User not found&quot;,
+            headers={&quot;WWW-Authenticate&quot;: &quot;Bearer&quot;},
+        )
+
+    return user
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
