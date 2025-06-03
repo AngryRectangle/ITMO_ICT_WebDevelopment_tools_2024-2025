@@ -6,7 +6,8 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import SecretStr
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
-import requests
+from celery import Celery
+from celery.result import AsyncResult
 
 import connections
 import security
@@ -18,7 +19,11 @@ from schemas import (UserCreate, UserRead, AccountCreate, AccountRead, CategoryC
 app = FastAPI()
 
 get_db = connections.get_session
-PARSER_URL = os.getenv("PARSER_URL")
+
+broker_url = os.getenv("CELERY_BROKER_URL")
+backend_url = os.getenv("CELERY_RESULT_BACKEND")
+celery = Celery("app_tasks", broker=broker_url, backend=backend_url)
+
 
 @app.on_event("startup")
 def on_startup():
@@ -243,9 +248,17 @@ def delete_target(target_id: UUID, db: Session = Depends(get_db),
     db.commit()
     return
 
-@app.get("/parse", status_code=200)
-def parse_data(url: str):
-    resp = requests.get(PARSER_URL, params={"url": url})
-    if resp.status_code != 200:
-        raise HTTPException(status_code=resp.status_code, detail=resp.text)
-    return resp.json()
+
+@app.post("/schedule-parse")
+async def schedule_parse(url: str):
+    task = celery.send_task("main.parse_url", args=[url])
+    return {"task_id": task.id}
+
+
+@app.get("/parse-result/{task_id}")
+async def parse_result(task_id: str):
+    res = AsyncResult(task_id, app=celery)
+    if res.ready():
+        return {"status": res.status, "result": res.result}
+    else:
+        return {"status": res.status}

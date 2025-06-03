@@ -1,33 +1,22 @@
+import os
+from celery import Celery
 import requests
-from fastapi import FastAPI, HTTPException
 
+REDIS_BROKER = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
+REDIS_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
 
-def fetch_html(url):
+celery_app = Celery("parser", broker=REDIS_BROKER, backend=REDIS_BACKEND)
+
+@celery_app.task
+def parse_url(url: str) -> dict:
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) "
-                      "Gecko/20100101 Firefox/138.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0"
     }
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
-    return resp.text
+    html = resp.text
 
-
-def parse_data(url: str):
-    html = fetch_html(url)
     title = html.split('<title itemprop="headline">')[1].split('</title>')[0]
     wealth = html.split('profile-info__item-value">$')[1].split('B</div>')[0]
-    return {
-        "title": title,
-        "wealth": wealth
-    }
-
-
-app = FastAPI()
-
-
-@app.get("/parse")
-def parse(url: str):
-    try:
-        return parse_data(url)
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    wealth = wealth.replace('.', '') if wealth else "0"
+    return {"title": title, "wealth": wealth}
