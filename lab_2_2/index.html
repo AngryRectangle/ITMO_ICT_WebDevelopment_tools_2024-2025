@@ -8,7 +8,7 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Lab1 - My Docs</title>
+        <title>Lab 2 2 - My Docs</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -38,13 +38,13 @@
                                 <a href=".." class="nav-link">Welcome to Мои лабораторные работы</a>
                             </li>
                             <li class="nav-item">
-                                <a href="./" class="nav-link active" aria-current="page">Lab1</a>
+                                <a href="../lab1/" class="nav-link">Lab1</a>
                             </li>
                             <li class="nav-item">
                                 <a href="../lab2_1/" class="nav-link">Lab2 1</a>
                             </li>
                             <li class="nav-item">
-                                <a href="../lab_2_2/" class="nav-link">Lab 2 2</a>
+                                <a href="./" class="nav-link active" aria-current="page">Lab 2 2</a>
                             </li>
                         </ul>
 
@@ -55,12 +55,12 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href=".." class="nav-link">
+                                <a rel="prev" href="../lab2_1/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="../lab2_1/" class="nav-link">
+                                <a rel="next" class="nav-link disabled">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -81,99 +81,135 @@
     
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
-            
-            
-            
-            
-            
         </ul>
     </div>
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h3 id="_1">Цели</h3>
-<p>Научится реализовывать полноценное серверное приложение с помощью фреймворка FastAPI с применением дополнительных
-средств и библиотек.</p>
-<h3 id="_2">Тема</h3>
-<p>Необходиом создать простой сервис для управления личными финансами. Сервис должен позволять пользователям вводить доходы
-и расходы, устанавливать бюджеты на различные категории, а также просматривать отчеты о своих финансах. Дополнительные
-функции могут включать в себя возможность получения уведомлений о превышении бюджета, анализа трат и установки целей на
-будущее.</p>
-<h3 id="_3">Модель данных</h3>
-<p><img alt="img_2.png" src="../img_2.png" />
-Для ведения учёта расходов и доходов используется транзакционная система с записью промежуточного итогу в баланс счёта.
-У каждой транзакции есть своя категория. Приход или расход определяется по тому + или - знак в поле amount.
-Чтобы ставить цели пользователь может завести отдельный счёт для накоплений. На этот счёт можно поставить цель и дедлайн.
-Для бюджетирования есть функционал создания бюджета на категории и счёт, для которого он будет применяться.
-У бюджета есть начальный и конечный срок.</p>
-<h3 id="api">API</h3>
-<p><img alt="img_1.png" src="../img_1.png" /></p>
-<h3 id="15">Задание на 15 баллов</h3>
-<p>Эндпоинты авторизации и регистрации:
-- /token - POST - получение токена доступа
-- /users/me - GET - получение информации о текущем пользователе по токену и проверка его валидности
-- /users - GET - получение списка всех пользователей
-- /users - POST - регистрация</p>
-<p><img alt="img.png" src="../img.png" />
-Пароль хранится в базе данных в виде хеша argon2. Генерируется через passlib.
-Используется так же перец, который хранится в env файле. Соль хранится внутри строки получаемой из passlib в базе данных.</p>
-<pre><code class="language-python">pepper = os.getenv('PEPPER')
+<p>Результаты выполнения:</p>
+<table>
+<thead>
+<tr>
+<th>Тип</th>
+<th>Время выполнения, с</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>multithreading</td>
+<td>0.34</td>
+</tr>
+<tr>
+<td>multiprocessing</td>
+<td>1.29</td>
+</tr>
+<tr>
+<td>asyncio</td>
+<td>0.36</td>
+</tr>
+</tbody>
+</table>
+<p>При активном взаимодействии с IO (сетевые запросы) multithreading и asyncio одинаково эффективны,
+так как в обоих случаях большую часть времени заняло бы выполнение запросов.
+Выполнение запросов не блокирует интерперататор и поэтому оба варианта работают эффективно.
+Вариант с мультипроцессингом неэффективен, так как имеет слишком большой оверхед на создание.</p>
+<p>Вариант с мультпроцессингом стал бы эффективен при значительном увеличении количества парсящихся сайтов,
+на порядки больше.</p>
+<p>Для выполнения задачи я получаю html код 3 страниц, которые разделены между 3 исполнителями,
+получаю из страниц название человека и его состояние, регистрирую на человека аккаунт в моей системе,
+полчую его токен, создаю ему счёт и транзакцию с начальным уровнем богатства.</p>
+<p>Листинг кода для asyncio:</p>
+<pre><code class="language-python">import asyncio
+import aiohttp
+import time
 
-pwd_context = CryptContext(schemes=[&quot;argon2&quot;])
+BASE_URL = &quot;http://127.0.0.1:8010&quot;
 
-def hash_password(plain_password: str) -&gt; str:
-    pwd_with_pepper = plain_password + pepper
-    return pwd_context.hash(pwd_with_pepper)
 
-def verify_password(plain_password: str, hashed: str) -&gt; bool:
-    pwd_with_pepper = plain_password + pepper
-    return pwd_context.verify(pwd_with_pepper, hashed)
-</code></pre>
-<p>Генерирую JWT через jose и отдаю его в token эндпоинте</p>
-<pre><code class="language-python">def create_access_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None
-) -&gt; str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=LIFETIME_IN_MINUTES))
-    to_encode.update({&quot;exp&quot;: expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-</code></pre>
-<p>Ручная валидация и парснг JWT. Разбиваю на куски, проверяю подпись, декодирую тело и возвращаю пользователя из бд:</p>
-<pre><code class="language-python">def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_session),
-) -&gt; User:
-    header_b64, payload_b64, sig_b64 = token.split(&quot;.&quot;)
-    payload_json = _b64url_decode(payload_b64).decode(&quot;utf-8&quot;)
-    signing_input = f&quot;{header_b64}.{payload_b64}&quot;.encode(&quot;ascii&quot;)
-    expected_sig = hmac.new(
-        key=SECRET_KEY.encode(&quot;utf-8&quot;),
-        msg=signing_input,
-        digestmod=hashlib.sha256
-    ).digest()
+async def create_user(session, username, email, password):
+    payload = {
+        &quot;username&quot;: username,
+        &quot;email&quot;: email,
+        &quot;password&quot;: password
+    }
 
-    actual_sig = _b64url_decode(sig_b64)
-    print(expected_sig)
-    print(actual_sig)
-    if not hmac.compare_digest(expected_sig, actual_sig):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=&quot;Invalid token signature&quot;,
-            headers={&quot;WWW-Authenticate&quot;: &quot;Bearer&quot;},
-        )
+    async with session.post(f&quot;{BASE_URL}/users&quot;, json=payload) as resp:
+        resp.raise_for_status()
+        return await resp.json()
 
-    payload = json.loads(payload_json)
-    user_id =  payload.get(&quot;sub&quot;)
-    user = db.get(User, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=&quot;User not found&quot;,
-            headers={&quot;WWW-Authenticate&quot;: &quot;Bearer&quot;},
-        )
 
-    return user
+async def get_token(session, username, password):
+    data = {
+        &quot;username&quot;: username,
+        &quot;password&quot;: password
+    }
+
+    headers = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
+    async with session.post(f&quot;{BASE_URL}/token&quot;, data=data, headers=headers) as resp:
+        resp.raise_for_status()
+        token_data = await resp.json()
+        return token_data[&quot;access_token&quot;]
+
+
+async def create_account(session, token, name, balance, currency):
+    headers = {&quot;Authorization&quot;: f&quot;Bearer {token}&quot;}
+    payload = {
+        &quot;name&quot;: name,
+        &quot;balance&quot;: balance,
+        &quot;currency&quot;: currency
+    }
+
+    async with session.post(f&quot;{BASE_URL}/accounts&quot;, json=payload, headers=headers) as resp:
+        resp.raise_for_status()
+        return await resp.json()
+
+
+async def create_transaction(session, token, account_id, amount, category_id):
+    headers = {&quot;Authorization&quot;: f&quot;Bearer {token}&quot;}
+    payload = {
+        &quot;account_id&quot;: account_id,
+        &quot;amount&quot;: amount,
+        &quot;category_id&quot;: category_id,
+        &quot;description&quot;: &quot;Initial wealth transfer&quot;
+    }
+
+    async with session.post(f&quot;{BASE_URL}/accounts/{account_id}/transactions&quot;, json=payload, headers=headers) as resp:
+        resp.raise_for_status()
+        return await resp.json()
+
+
+async def fetch(session, url):
+    headers = {
+        &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0&quot;
+    }
+    async with session.get(url, headers=headers) as response:
+        response.raise_for_status()
+        return await response.text()
+
+
+async def parse_and_save_data_single(url):
+    async with aiohttp.ClientSession() as session:
+        data = await fetch(session, url)
+        title = data.split('&lt;title itemprop=&quot;headline&quot;&gt;')[1].split('&lt;/title&gt;')[0]
+        wealth = data.split('profile-info__item-value&quot;&gt;$')[1].split('B&lt;/div&gt;')[0]
+        wealth = wealth.replace('.', '') if wealth else '0'
+        wealth = int(wealth)
+        await create_user(session, title.replace(' ', '_').lower(), f&quot;{title.replace(' ', '_').lower()}@example.com&quot;, &quot;12345678&quot;)
+        token = await get_token(session, title.replace(' ', '_').lower(), &quot;12345678&quot;)
+        account = await create_account(session, token, title, wealth, &quot;USD&quot;)
+        await create_transaction(session, token, account['id'], wealth, &quot;730864ac-e174-4996-99c1-1caf8b934202&quot;)
+
+async def parse_and_save_data(urls):
+    tasks = [parse_and_save_data_single(url) for url in urls]
+    async with aiohttp.ClientSession() as session:
+        await asyncio.gather(*tasks)
+
+
+start_time = time.perf_counter()
+asyncio.run(parse_and_save_data(['https://www.forbes.com/profile/elon-musk/?list=rtb/', 'https://www.forbes.com/profile/mark-zuckerberg/?list=rtb/', 'https://www.forbes.com/profile/jeff-bezos/?list=rtb/']))
+end_time = time.perf_counter()
+print(f&quot;{end_time - start_time} seconds&quot;)
+#0.3639050999772735 seconds
 </code></pre></div>
             </div>
         </div>

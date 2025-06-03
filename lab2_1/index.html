@@ -8,7 +8,7 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Lab1 - My Docs</title>
+        <title>Lab2 1 - My Docs</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -38,10 +38,10 @@
                                 <a href=".." class="nav-link">Welcome to Мои лабораторные работы</a>
                             </li>
                             <li class="nav-item">
-                                <a href="./" class="nav-link active" aria-current="page">Lab1</a>
+                                <a href="../lab1/" class="nav-link">Lab1</a>
                             </li>
                             <li class="nav-item">
-                                <a href="../lab2_1/" class="nav-link">Lab2 1</a>
+                                <a href="./" class="nav-link active" aria-current="page">Lab2 1</a>
                             </li>
                             <li class="nav-item">
                                 <a href="../lab_2_2/" class="nav-link">Lab 2 2</a>
@@ -55,12 +55,12 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href=".." class="nav-link">
+                                <a rel="prev" href="../lab1/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="../lab2_1/" class="nav-link">
+                                <a rel="next" href="../lab_2_2/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -81,99 +81,143 @@
     
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
-            
-            
-            
-            
-            
         </ul>
     </div>
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h3 id="_1">Цели</h3>
-<p>Научится реализовывать полноценное серверное приложение с помощью фреймворка FastAPI с применением дополнительных
-средств и библиотек.</p>
-<h3 id="_2">Тема</h3>
-<p>Необходиом создать простой сервис для управления личными финансами. Сервис должен позволять пользователям вводить доходы
-и расходы, устанавливать бюджеты на различные категории, а также просматривать отчеты о своих финансах. Дополнительные
-функции могут включать в себя возможность получения уведомлений о превышении бюджета, анализа трат и установки целей на
-будущее.</p>
-<h3 id="_3">Модель данных</h3>
-<p><img alt="img_2.png" src="../img_2.png" />
-Для ведения учёта расходов и доходов используется транзакционная система с записью промежуточного итогу в баланс счёта.
-У каждой транзакции есть своя категория. Приход или расход определяется по тому + или - знак в поле amount.
-Чтобы ставить цели пользователь может завести отдельный счёт для накоплений. На этот счёт можно поставить цель и дедлайн.
-Для бюджетирования есть функционал создания бюджета на категории и счёт, для которого он будет применяться.
-У бюджета есть начальный и конечный срок.</p>
-<h3 id="api">API</h3>
-<p><img alt="img_1.png" src="../img_1.png" /></p>
-<h3 id="15">Задание на 15 баллов</h3>
-<p>Эндпоинты авторизации и регистрации:
-- /token - POST - получение токена доступа
-- /users/me - GET - получение информации о текущем пользователе по токену и проверка его валидности
-- /users - GET - получение списка всех пользователей
-- /users - POST - регистрация</p>
-<p><img alt="img.png" src="../img.png" />
-Пароль хранится в базе данных в виде хеша argon2. Генерируется через passlib.
-Используется так же перец, который хранится в env файле. Соль хранится внутри строки получаемой из passlib в базе данных.</p>
-<pre><code class="language-python">pepper = os.getenv('PEPPER')
+<p>Результаты выполнения:</p>
+<table>
+<thead>
+<tr>
+<th>Тип</th>
+<th>Время выполнения, с</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>multithreading</td>
+<td>9.57</td>
+</tr>
+<tr>
+<td>multiprocessing</td>
+<td>2.68</td>
+</tr>
+<tr>
+<td>asyncio</td>
+<td>9.41</td>
+</tr>
+</tbody>
+</table>
+<p>Версия с multithreading не даёт буста производительности, так как происходит упор
+в вычисления с использованием питоновского интерпретатора и параллельное использование
+интерпретатора блокируется GIL. Версия с asyncio даёт примерно такой же
+результат, так как во-первых всё так же идёт взамиодействие с интерпретатором, а во-вторых
+внутри функций вычисления не вызывается await, а значит вся функция выполняется синхронно
+в вызывающем потоке. Версия с multiprocessing даёт наибольший буст производительности,
+так как в ней создаются реально отдельные процессы, которые могут
+параллельно выполняться, так как работают в разных интерпретаторах и не блокируются GIL.
+Но есть оверхед на создание процессов.</p>
+<p>Во всех 3 реализациях range делится на 33 куска (в случае с процессами на 5), 32 иди 4 из
+которых отдаются рабочим потокам или процессам, а последний кусок, остающийся от деления,
+суммируется в основном потоке или процессе.</p>
+<p>Листинг multithreading:</p>
+<pre><code class="language-python">import threading
+import time
 
-pwd_context = CryptContext(schemes=[&quot;argon2&quot;])
+def calculate_sum():
+    from_value = 1
+    to_value = 10**9
+    workers_count = 32
+    threads = []
+    step = (to_value - from_value) // workers_count
+    result = [0] * workers_count
+    for i in range(workers_count):
+        start = from_value + i * step
+        end = from_value + (i + 1) * step
+        thread = threading.Thread(target = calculate_worker, args = (start, end, result, i))
+        threads.append(thread)
+        thread.start()
 
-def hash_password(plain_password: str) -&gt; str:
-    pwd_with_pepper = plain_password + pepper
-    return pwd_context.hash(pwd_with_pepper)
+    for thread in threads:
+        thread.join()
 
-def verify_password(plain_password: str, hashed: str) -&gt; bool:
-    pwd_with_pepper = plain_password + pepper
-    return pwd_context.verify(pwd_with_pepper, hashed)
+    return sum(result) + sum(range(from_value + workers_count * step, to_value + 1))
+
+def calculate_worker(start, end, result, index):
+    total = sum(range(start, end))
+    result[index] = total
+
+start_time = time.perf_counter()
+sum = calculate_sum()
+end_time = time.perf_counter()
+print(sum)
+print(f&quot;{end_time - start_time} seconds&quot;)
 </code></pre>
-<p>Генерирую JWT через jose и отдаю его в token эндпоинте</p>
-<pre><code class="language-python">def create_access_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None
-) -&gt; str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=LIFETIME_IN_MINUTES))
-    to_encode.update({&quot;exp&quot;: expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+<p>Листинг multiprocessing:</p>
+<pre><code class="language-python">import time
+import multiprocessing
+
+def calculate_sum():
+    from_value = 1
+    to_value = 10 ** 9
+    workers_count = 4
+    processes = []
+    step = (to_value - from_value) // workers_count
+    result = multiprocessing.Array('q', workers_count)
+    for i in range(workers_count):
+        start = from_value + i * step
+        end = from_value + (i + 1) * step
+        process = multiprocessing.Process(target=calculate_worker, args=(start, end, result, i))
+        processes.append(process)
+        process.start()
+
+    for process in processes:
+        process.join()
+
+    return sum(result) + sum(range(from_value + workers_count * step, to_value + 1))
+
+def calculate_worker(start, end, result, index):
+    total = sum(range(start, end))
+    result[index] = total
+
+if __name__ == '__main__':
+    start_time = time.perf_counter()
+    sum = calculate_sum()
+    end_time = time.perf_counter()
+    print(sum)
+    print(f&quot;{end_time - start_time} seconds&quot;)
 </code></pre>
-<p>Ручная валидация и парснг JWT. Разбиваю на куски, проверяю подпись, декодирую тело и возвращаю пользователя из бд:</p>
-<pre><code class="language-python">def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_session),
-) -&gt; User:
-    header_b64, payload_b64, sig_b64 = token.split(&quot;.&quot;)
-    payload_json = _b64url_decode(payload_b64).decode(&quot;utf-8&quot;)
-    signing_input = f&quot;{header_b64}.{payload_b64}&quot;.encode(&quot;ascii&quot;)
-    expected_sig = hmac.new(
-        key=SECRET_KEY.encode(&quot;utf-8&quot;),
-        msg=signing_input,
-        digestmod=hashlib.sha256
-    ).digest()
+<p>Листинг asyncio:</p>
+<pre><code class="language-python">import time
+import asyncio
 
-    actual_sig = _b64url_decode(sig_b64)
-    print(expected_sig)
-    print(actual_sig)
-    if not hmac.compare_digest(expected_sig, actual_sig):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=&quot;Invalid token signature&quot;,
-            headers={&quot;WWW-Authenticate&quot;: &quot;Bearer&quot;},
-        )
+async def calculate_sum():
+    from_value = 1
+    to_value = 10**9
+    workers_count = 32
+    tasks = []
+    step = (to_value - from_value) // workers_count
+    result = [0] * workers_count
 
-    payload = json.loads(payload_json)
-    user_id =  payload.get(&quot;sub&quot;)
-    user = db.get(User, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=&quot;User not found&quot;,
-            headers={&quot;WWW-Authenticate&quot;: &quot;Bearer&quot;},
-        )
+    for i in range(workers_count):
+        start = from_value + i * step
+        end = from_value + (i + 1) * step
+        tasks.append(calculate_worker(start, end, result, i))
 
-    return user
+    await asyncio.gather(*tasks)
+    return sum(result) + sum(range(from_value + workers_count * step, to_value + 1))
+
+async def calculate_worker(start, end, result, index):
+    total = sum(range(start, end))
+    result[index] = total
+
+
+start_time = time.perf_counter()
+sum_result = asyncio.run(calculate_sum())
+end_time = time.perf_counter()
+print(sum_result)
+print(f&quot;{end_time - start_time} seconds&quot;)
 </code></pre></div>
             </div>
         </div>
