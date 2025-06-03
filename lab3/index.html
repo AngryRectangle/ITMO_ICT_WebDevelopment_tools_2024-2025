@@ -8,7 +8,7 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Lab2 2 - My Docs</title>
+        <title>Lab3 - My Docs</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -44,10 +44,10 @@
                                 <a href="../lab2_1/" class="nav-link">Lab2 1</a>
                             </li>
                             <li class="nav-item">
-                                <a href="./" class="nav-link active" aria-current="page">Lab2 2</a>
+                                <a href="../lab2_2/" class="nav-link">Lab2 2</a>
                             </li>
                             <li class="nav-item">
-                                <a href="../lab3/" class="nav-link">Lab3</a>
+                                <a href="./" class="nav-link active" aria-current="page">Lab3</a>
                             </li>
                         </ul>
 
@@ -58,12 +58,12 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href="../lab2_1/" class="nav-link">
+                                <a rel="prev" href="../lab2_2/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="../lab3/" class="nav-link">
+                                <a rel="next" class="nav-link disabled">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -89,131 +89,196 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<p>Результаты выполнения:</p>
-<table>
-<thead>
-<tr>
-<th>Тип</th>
-<th>Время выполнения, с</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>multithreading</td>
-<td>0.34</td>
-</tr>
-<tr>
-<td>multiprocessing</td>
-<td>1.29</td>
-</tr>
-<tr>
-<td>asyncio</td>
-<td>0.36</td>
-</tr>
-</tbody>
-</table>
-<p>При активном взаимодействии с IO (сетевые запросы) multithreading и asyncio одинаково эффективны,
-так как в обоих случаях большую часть времени заняло бы выполнение запросов.
-Выполнение запросов не блокирует интерперататор и поэтому оба варианта работают эффективно.
-Вариант с мультипроцессингом неэффективен, так как имеет слишком большой оверхед на создание.</p>
-<p>Вариант с мультпроцессингом стал бы эффективен при значительном увеличении количества парсящихся сайтов,
-на порядки больше.</p>
-<p>Для выполнения задачи я получаю html код 3 страниц, которые разделены между 3 исполнителями,
-получаю из страниц название человека и его состояние, регистрирую на человека аккаунт в моей системе,
-полчую его токен, создаю ему счёт и транзакцию с начальным уровнем богатства.</p>
-<p>Листинг кода для asyncio:</p>
-<pre><code class="language-python">import asyncio
-import aiohttp
-import time
-
-BASE_URL = &quot;http://127.0.0.1:8010&quot;
+<p>В начале я создал dockerfile для проекта app (fast api приложение) и для парсера.
+Выглядят они одинаково. Потом настроил requirements.txt</p>
+<pre><code class="language-python">FROM python:3.9
+WORKDIR /code
+COPY ./requirements.txt /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+COPY . /code
+CMD [&quot;uvicorn&quot;, &quot;main:app&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;80&quot;]
+</code></pre>
+<p>Парсер был переделан так, чтобы принимать http запросы и возвращать json:</p>
+<pre><code class="language-python">import requests
+from fastapi import FastAPI, HTTPException
 
 
-async def create_user(session, username, email, password):
-    payload = {
-        &quot;username&quot;: username,
-        &quot;email&quot;: email,
-        &quot;password&quot;: password
+def fetch_html(url):
+    headers = {
+        &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) &quot;
+                      &quot;Gecko/20100101 Firefox/138.0&quot;
+    }
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+    return resp.text
+
+
+def parse_data(url: str):
+    html = fetch_html(url)
+    title = html.split('&lt;title itemprop=&quot;headline&quot;&gt;')[1].split('&lt;/title&gt;')[0]
+    wealth = html.split('profile-info__item-value&quot;&gt;$')[1].split('B&lt;/div&gt;')[0]
+    return {
+        &quot;title&quot;: title,
+        &quot;wealth&quot;: wealth
     }
 
-    async with session.post(f&quot;{BASE_URL}/users&quot;, json=payload) as resp:
-        resp.raise_for_status()
-        return await resp.json()
+
+app = FastAPI()
 
 
-async def get_token(session, username, password):
-    data = {
-        &quot;username&quot;: username,
-        &quot;password&quot;: password
-    }
+@app.get(&quot;/parse&quot;)
+def parse(url: str):
+    try:
+        return parse_data(url)
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    headers = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
-    async with session.post(f&quot;{BASE_URL}/token&quot;, data=data, headers=headers) as resp:
-        resp.raise_for_status()
-        token_data = await resp.json()
-        return token_data[&quot;access_token&quot;]
+</code></pre>
+<p>Всё это было объединено docker-compose.yml:</p>
+<pre><code class="language-yaml">services:
+  app:
+    build:
+      context: ./app
+    container_name: app_container
+    ports:
+      - &quot;8000:80&quot;
+    depends_on:
+      - db
+      - parser
+    networks:
+      - network
+    environment:
+      DB_ADMIN: &quot;postgresql+pg8000://postgres:12345678@postgres_container:5432/appdb&quot;
+      PARSER_URL: &quot;http://parser_container:80/parse&quot;
 
+  db:
+    image: postgres:17.2
+    container_name: postgres_container
+    ports:
+      - &quot;5432:5432&quot;
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: appdb
+    volumes:
+      - ~/postgres-data:/var/lib/postgresql/data
+    networks:
+      - network
 
-async def create_account(session, token, name, balance, currency):
-    headers = {&quot;Authorization&quot;: f&quot;Bearer {token}&quot;}
-    payload = {
-        &quot;name&quot;: name,
-        &quot;balance&quot;: balance,
-        &quot;currency&quot;: currency
-    }
+  parser:
+    build:
+      context: ./parser
+    container_name: parser_container
+    networks:
+      - network
 
-    async with session.post(f&quot;{BASE_URL}/accounts&quot;, json=payload, headers=headers) as resp:
-        resp.raise_for_status()
-        return await resp.json()
+networks:
+  network:
+</code></pre>
+<p>Внутрь app добавил вызов парсера и протестировал работу, всё ок.
+После этого я начал добавлять celery. Переделал парсер:</p>
+<pre><code class="language-python">import os
+from celery import Celery
+import requests
 
+REDIS_BROKER = os.getenv(&quot;CELERY_BROKER_URL&quot;, &quot;redis://redis:6379/0&quot;)
+REDIS_BACKEND = os.getenv(&quot;CELERY_RESULT_BACKEND&quot;, &quot;redis://redis:6379/1&quot;)
 
-async def create_transaction(session, token, account_id, amount, category_id):
-    headers = {&quot;Authorization&quot;: f&quot;Bearer {token}&quot;}
-    payload = {
-        &quot;account_id&quot;: account_id,
-        &quot;amount&quot;: amount,
-        &quot;category_id&quot;: category_id,
-        &quot;description&quot;: &quot;Initial wealth transfer&quot;
-    }
+celery_app = Celery(&quot;parser&quot;, broker=REDIS_BROKER, backend=REDIS_BACKEND)
 
-    async with session.post(f&quot;{BASE_URL}/accounts/{account_id}/transactions&quot;, json=payload, headers=headers) as resp:
-        resp.raise_for_status()
-        return await resp.json()
-
-
-async def fetch(session, url):
+@celery_app.task
+def parse_url(url: str) -&gt; dict:
     headers = {
         &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0&quot;
     }
-    async with session.get(url, headers=headers) as response:
-        response.raise_for_status()
-        return await response.text()
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+    html = resp.text
+
+    title = html.split('&lt;title itemprop=&quot;headline&quot;&gt;')[1].split('&lt;/title&gt;')[0]
+    wealth = html.split('profile-info__item-value&quot;&gt;$')[1].split('B&lt;/div&gt;')[0]
+    wealth = wealth.replace('.', '') if wealth else &quot;0&quot;
+    return {&quot;title&quot;: title, &quot;wealth&quot;: wealth}
+</code></pre>
+<p>Потом переделал app, добавил вместо одного старого два новых эндпоинта для взаимодействия с celery</p>
+<pre><code class="language-python">@app.post(&quot;/schedule-parse&quot;)
+async def schedule_parse(url: str):
+    task = celery.send_task(&quot;main.parse_url&quot;, args=[url])
+    return {&quot;task_id&quot;: task.id}
 
 
-async def parse_and_save_data_single(url):
-    async with aiohttp.ClientSession() as session:
-        data = await fetch(session, url)
-        title = data.split('&lt;title itemprop=&quot;headline&quot;&gt;')[1].split('&lt;/title&gt;')[0]
-        wealth = data.split('profile-info__item-value&quot;&gt;$')[1].split('B&lt;/div&gt;')[0]
-        wealth = wealth.replace('.', '') if wealth else '0'
-        wealth = int(wealth)
-        await create_user(session, title.replace(' ', '_').lower(), f&quot;{title.replace(' ', '_').lower()}@example.com&quot;, &quot;12345678&quot;)
-        token = await get_token(session, title.replace(' ', '_').lower(), &quot;12345678&quot;)
-        account = await create_account(session, token, title, wealth, &quot;USD&quot;)
-        await create_transaction(session, token, account['id'], wealth, &quot;730864ac-e174-4996-99c1-1caf8b934202&quot;)
+@app.get(&quot;/parse-result/{task_id}&quot;)
+async def parse_result(task_id: str):
+    res = AsyncResult(task_id, app=celery)
+    if res.ready():
+        return {&quot;status&quot;: res.status, &quot;result&quot;: res.result}
+    else:
+        return {&quot;status&quot;: res.status}
+</code></pre>
+<p>Обновил docker-compose.yml, убрал оттуда парсер и добавил его как celery worker'а и редис:</p>
+<pre><code class="language-yaml">services:
+  app:
+    build:
+      context: ./app
+    container_name: app_container
+    ports:
+      - &quot;8000:80&quot;
+    depends_on:
+      - db
+      - redis
+      - celery_worker
+    networks:
+      - network
+    environment:
+      DB_ADMIN: &quot;postgresql+pg8000://postgres:12345678@postgres_container:5432/appdb&quot;
+      CELERY_BROKER_URL: &quot;redis://redis:6379/0&quot;
+      CELERY_RESULT_BACKEND: &quot;redis://redis:6379/1&quot;
 
-async def parse_and_save_data(urls):
-    tasks = [parse_and_save_data_single(url) for url in urls]
-    async with aiohttp.ClientSession() as session:
-        await asyncio.gather(*tasks)
+  db:
+    image: postgres:17.2
+    container_name: postgres_container
+    ports:
+      - &quot;5432:5432&quot;
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: appdb
+    volumes:
+      - ~/postgres-data:/var/lib/postgresql/data
+    networks:
+      - network
 
+  redis:
+    image: redis:8-alpine
+    container_name: redis_container
+    ports:
+      - &quot;6379:6379&quot;
+    networks:
+      - network
 
-start_time = time.perf_counter()
-asyncio.run(parse_and_save_data(['https://www.forbes.com/profile/elon-musk/?list=rtb/', 'https://www.forbes.com/profile/mark-zuckerberg/?list=rtb/', 'https://www.forbes.com/profile/jeff-bezos/?list=rtb/']))
-end_time = time.perf_counter()
-print(f&quot;{end_time - start_time} seconds&quot;)
-#0.3639050999772735 seconds
-</code></pre></div>
+  celery_worker:
+    build:
+      context: ./parser
+    container_name: celery_worker_container
+    depends_on:
+      - redis
+      - db
+    networks:
+      - network
+    environment:
+      CELERY_BROKER_URL: &quot;redis://redis:6379/0&quot;
+      CELERY_RESULT_BACKEND: &quot;redis://redis:6379/1&quot;
+      DB_ADMIN: &quot;postgresql+pg8000://postgres:12345678@postgres_container:5432/appdb&quot;
+    command: celery -A main worker --concurrency=4
+
+networks:
+  network:
+</code></pre>
+<p>Так выглядит работа эндпоинтов:
+<img alt="img_3.png" src="../img_3.png" />
+<img alt="img_4.png" src="../img_4.png" /></p></div>
             </div>
         </div>
 
